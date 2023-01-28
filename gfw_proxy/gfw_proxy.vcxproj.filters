@@ -27,6 +27,12 @@
     <ClCompile Include="client_session.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="httprequest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test_main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -42,6 +48,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="client_session.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="httprequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

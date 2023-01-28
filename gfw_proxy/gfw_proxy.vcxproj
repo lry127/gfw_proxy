@@ -134,11 +134,18 @@
   <ItemGroup>
     <ClCompile Include="client_session.cpp" />
     <ClCompile Include="config.cpp" />
-    <ClCompile Include="gfw_proxy.cpp" />
+    <ClCompile Include="gfw_proxy.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="httprequest.cpp" />
     <ClCompile Include="server.cpp" />
+    <ClCompile Include="test_main.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="client_session.h" />
+    <ClInclude Include="httprequest.h" />
     <ClInclude Include="session.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="exceptions.h" />
