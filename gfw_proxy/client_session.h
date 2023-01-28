@@ -11,7 +11,7 @@ class Client_session final : public Session
 public:
 	Client_session(boost::asio::io_context& context, boost::asio::ssl::context& ssl_context, boost::asio::ip::tcp::socket socket, const Config& config) :
 		Session(context, ssl_context, std::move(socket), config), ssl_socket_(std::move(socket_)),out_socket_(context)
-	, resolver_(context), in_read_buffer_(), out_read_buffer_(){}
+	, resolver_(context), in_read_buffer_(){}
 	void start() override;
 	~Client_session() override {}
 
@@ -23,15 +23,17 @@ private:
 	boost::asio::ip::tcp::socket out_socket_;
 	boost::asio::ip::tcp::resolver resolver_;
 	boost::asio::streambuf in_read_buffer_;
-	boost::asio::streambuf out_read_buffer_;
+	char in_data_buf_[BUFFER_SIZE];
+	char out_data_buf_[BUFFER_SIZE];
 	HttpRequest request_;
 	void do_in_async_read();
 	void on_in_async_read_finished(self_ptr self_p, const boost::system::error_code& ec, size_t read_len);
 	void do_in_async_write(self_ptr self_p);
 	void on_in_async_write_finished(self_ptr self_p, data_ptr data_p, const boost::system::error_code& ec, size_t write_len);
 	void in_write_helper(self_ptr self_p, data_ptr data);
-	void do_out_async_write(self_ptr self_p, data_ptr data);
+	void do_out_async_write(self_ptr self_p, size_t buf_len);
 	void do_out_async_read(self_ptr self_p);
 	void on_out_async_read_finished(self_ptr self_p, const boost::system::error_code& ec, size_t read_len);
+	size_t out_recv_len_ = 0;
 	data_ptr consume_buffer(boost::asio::streambuf* buf);
 };

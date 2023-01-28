@@ -27,8 +27,8 @@ void Client_session::do_in_async_read()
 	}
 	case Client_session::FORWARD:
 	{
-		boost::asio::streambuf::mutable_buffers_type buf = in_read_buffer_.prepare(BUFFER_SIZE);
-		ssl_socket_.async_read_some(buf, std::bind(&Client_session::on_in_async_read_finished, this, self, std::placeholders::_1, std::placeholders::_2));
+		ssl_socket_.async_read_some(boost::asio::buffer(in_data_buf_, BUFFER_SIZE), 
+			std::bind(&Client_session::on_in_async_read_finished, this, self, std::placeholders::_1, std::placeholders::_2));
 		break;
 	}
 	default:
@@ -76,10 +76,8 @@ void Client_session::on_in_async_read_finished(self_ptr self_p, const boost::sys
 			break;
 		}
 		case Client_session::FORWARD:
-		{
-			in_read_buffer_.commit(read_len);
-			auto read_data = consume_buffer(&in_read_buffer_);
-			do_out_async_write(self_p, read_data);
+		{	
+			do_out_async_write(self_p, read_len);
 			do_in_async_read();
 		}
 		default:
@@ -114,6 +112,7 @@ void Client_session::do_in_async_write(self_ptr self_p)
 				boost::asio::async_connect(out_socket_, results, [this, self_p](const boost::system::error_code& ec, const boost::asio::ip::tcp::endpoint& ep) {
 					if (!ec)
 					{
+						std::cerr << "accepted connection to " << request_.get_host() << ":" << request_.get_port() << std::endl;
 						data_ptr ok_data = std::make_shared<std::string>(HttpRequest::get_200_ok_message());
 						read_state_ = FORWARD;
 						in_write_helper(self_p, ok_data);
@@ -129,9 +128,9 @@ void Client_session::do_in_async_write(self_ptr self_p)
 	}
 	case Client_session::FORWARD:
 	{
-		data_ptr in_write_data = consume_buffer(&out_read_buffer_);
-		in_write_helper(self_p, in_write_data);
-		do_in_async_read();
+		ssl_socket_.async_send(boost::asio::buffer(out_data_buf_, out_recv_len_), [this, self_p](const boost::system::error_code&, size_t len) {
+			do_in_async_read();
+			});
 	}
 	default:
 		break;
@@ -151,31 +150,27 @@ void Client_session::on_in_async_write_finished(self_ptr self_p, data_ptr data_p
 
 Client_session::data_ptr Client_session::consume_buffer(boost::asio::streambuf* buf)
 {
-	data_ptr buf_data_ptr = std::make_shared<std::string>();
-	std::string tmp;
-	std::istream buf_stream(buf);
-	while (buf_stream >> tmp)
-		*buf_data_ptr += tmp;
+	data_ptr buf_data_ptr = std::make_shared<std::string>(boost::asio::buffers_begin(buf->data()), boost::asio::buffers_end(buf->data()));
+	buf->consume(buf_data_ptr->size());
 	return buf_data_ptr;
 }
 
-void Client_session::do_out_async_write(self_ptr self_p, data_ptr data)
+void Client_session::do_out_async_write(self_ptr self_p, size_t buf_len)
 {
-	boost::asio::async_write(out_socket_, boost::asio::buffer(data->c_str(), data->size()), [this, self_p](const boost::system::error_code& ec, size_t write_len) {
+	out_socket_.async_send(boost::asio::buffer(in_data_buf_, buf_len), [this, self_p](const boost::system::error_code& ec, size_t write_len) {
 		do_out_async_read(self_p);
 		});
 }
 
 void Client_session::do_out_async_read(self_ptr self_p)
 {
-	boost::asio::streambuf::mutable_buffers_type buf = in_read_buffer_.prepare(BUFFER_SIZE);
-	out_socket_.async_read_some(buf, std::bind(&Client_session::on_out_async_read_finished, this, self_p, std::placeholders::_1, std::placeholders::_2));
-	
+	out_socket_.async_read_some(boost::asio::buffer(out_data_buf_, BUFFER_SIZE), 
+		std::bind(&Client_session::on_out_async_read_finished, this, self_p, std::placeholders::_1, std::placeholders::_2));
 }
 
 void Client_session::on_out_async_read_finished(self_ptr self_p, const boost::system::error_code& ec, size_t read_len)
 {
-	out_read_buffer_.commit(read_len);
+	out_recv_len_ = read_len;
 	do_in_async_write(self_p);
 	do_out_async_read(self_p);
 }
