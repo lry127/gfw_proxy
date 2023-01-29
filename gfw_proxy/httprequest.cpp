@@ -62,7 +62,7 @@ bool HttpRequest::read_fields(const std::string& fields_data)
 
 std::string HttpRequest::get_200_ok_message()
 {
-	return "HTTP/1.1 200 OK\r\nConnection: Keep-alive\r\n\r\n";
+	return "HTTP/1.1 200 OK\r\n\r\n";
 }
 
 std::string HttpRequest::get_404_not_found_message()

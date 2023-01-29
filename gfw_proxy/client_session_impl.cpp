@@ -12,29 +12,25 @@ void Client_session::do_in_async_read()
 		return;
 		}
 	raw_data_ptr raw_read_data = std::make_shared<boost::asio::const_buffer>(in_data_buf_, length);
-	data_ptr read_data = std::make_shared<std::string>((const char*)in_data_buf_, length);
-	on_in_received(read_data);
+	on_in_received(raw_read_data);
 		});
 }
 
 
-void Client_session::on_in_received(data_ptr data)
+void Client_session::on_in_received(raw_data_ptr data)
 {
 	auto self = shared_from_this();
-	std::istringstream data_stream(*data);
 	switch (read_state_)
 	{
 	case Client_session::BAD:
 		break;
 	case Client_session::REQUEST:
 	{
+		std::istringstream data_stream(std::string((const char*)data->data()));
 		std::string head;
 		std::getline(data_stream, head);
 		request_.read_head(head);
 		// continue to process field, do not break here
-	}
-	case Client_session::HEAD:
-	{
 		std::string field;
 		while (std::getline(data_stream, field))
 			if (field != "\r")
@@ -44,10 +40,6 @@ void Client_session::on_in_received(data_ptr data)
 			destroy();
 			return;
 		}
-		// continue to establish connection to the server, do not break here.
-	}
-	case Client_session::HEAD_FINISHED:
-	{
 		boost::asio::ip::tcp::resolver::query query(request_.get_host(), request_.get_port());
 		resolver_.async_resolve(query, [this, self, &query](const boost::system::error_code& ec, boost::asio::ip::tcp::resolver::results_type results) {
 			if (!ec)
@@ -57,23 +49,27 @@ void Client_session::on_in_received(data_ptr data)
 					{
 						std::cerr << "accepted connection to " << request_.get_host() << ":" << request_.get_port() << std::endl;
 						read_state_ = HEAD_FINISHED;
-						data_ptr ok_data = std::make_shared<std::string>(HttpRequest::get_200_ok_message());
-						do_in_async_write(ok_data);
+						raw_data_ptr ok_data = std::make_shared<boost::asio::const_buffer>(HttpRequest::get_200_ok_message().c_str(), HttpRequest::get_200_ok_message().size());
+						data_ptr ok_data_str = std::make_shared <std::string>(HttpRequest::get_200_ok_message());
+						boost::asio::async_write(ssl_socket_, boost::asio::buffer(*ok_data_str), [this, self, ok_data_str](const boost::system::error_code& ec, size_t len) {
+							on_in_sent();
+							});
+						// do_in_async_write(ok_data);
 					}
 					else
 					{
 						destroy();
 						return;
 					}
-					});
+							});
 			}
 			else
 			{
 				destroy();
 				return;
 			}
-			});
-		break;
+					});
+				break;
 	}
 	case Client_session::FORWARD:
 	{
@@ -85,7 +81,7 @@ void Client_session::on_in_received(data_ptr data)
 	}
 }
 
-void Client_session::do_in_async_write(data_ptr data)
+void Client_session::do_in_async_write(raw_data_ptr data)
 {
 	auto self = shared_from_this();
 	boost::asio::async_write(ssl_socket_, boost::asio::buffer(*data), [this, self, data](const boost::system::error_code& ec, size_t length) {
@@ -98,7 +94,7 @@ void Client_session::do_in_async_write(data_ptr data)
 		});
 }
 
-void Client_session::do_out_async_write(data_ptr data)
+void Client_session::do_out_async_write(raw_data_ptr data)
 {
 	auto self = shared_from_this();
 	boost::asio::async_write(out_socket_, boost::asio::buffer(*data), [this, self, data](const boost::system::error_code& ec, size_t length) {
@@ -151,12 +147,12 @@ void Client_session::do_out_async_read()
 				destroy();
 				return;
 			}
-	data_ptr data = std::make_shared<std::string>((const char*)in_data_buf_, length);
+	raw_data_ptr data = std::make_shared<boost::asio::const_buffer>(out_data_buf_, length);
 	on_out_received(data);
 		});
 }
 
-void Client_session::on_out_received(data_ptr data)
+void Client_session::on_out_received(raw_data_ptr data)
 {
 	do_in_async_write(data);
 }

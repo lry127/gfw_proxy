@@ -29,14 +29,14 @@ private:
 	unsigned char out_data_buf_[BUFFER_SIZE]{};
 	HttpRequest request_;
 	void do_in_async_read();
-	void do_in_async_write(data_ptr data);
-	void do_out_async_write(data_ptr data);
+	void do_in_async_write(raw_data_ptr data);
+	void do_out_async_write(raw_data_ptr data);
 	void do_out_async_read();
 	void destroy();
-	void on_in_received(data_ptr data);
+	void on_in_received(raw_data_ptr data);
 	void on_in_sent();
 	void on_out_sent();
-	void on_out_received(data_ptr data);
+	void on_out_received(raw_data_ptr data);
 	bool first_out_write_ = true;
 	/*
 	void on_in_async_read_finished(self_ptr self_p, const boost::system::error_code& ec, size_t read_len);
