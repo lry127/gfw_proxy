@@ -26,7 +26,7 @@ void Client_session::do_out_async_handshake()
 	ssl_socket_.async_handshake(boost::asio::ssl::stream_base::client, [this, self](const boost::system::error_code& ec) {
 		if (ec)
 		{
-			std::cerr << ec.message();
+			std::cerr << ec.message() << std::endl;
 			destroy();
 			return;
 		}
@@ -210,5 +210,5 @@ void Client_session::destroy()
 		out_socket_.close(ec);
 	}
 
-	std::cerr << "connection to " << ssl_socket_.next_layer().remote_endpoint().address() << " closed.\n";
+	std::cerr << "connection to " << ssl_socket_.next_layer().remote_endpoint(ec).address() << " closed.\n";
 }

@@ -14,17 +14,7 @@ public:
 	Client_session(boost::asio::io_context& context, boost::asio::ssl::context& ssl_context, boost::asio::ip::tcp::socket socket, const Config& config) :
 		Session(context, ssl_context, config), ssl_socket_(context, ssl_context), out_socket_(std::move(socket))
 		, resolver_(context) { ssl_socket_.set_verify_mode(boost::asio::ssl::verify_peer); }
-	void start() 
-	{ 
-		try
-		{
-			do_out_async_connect();
-		}
-		catch (const std::exception&)
-		{
-			destroy();
-		}
-	}
+	void start() { do_out_async_connect();}
 	~Client_session() override {}
 
 private:
