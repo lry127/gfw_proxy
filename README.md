@@ -133,14 +133,14 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
             -out my_domain.csr
         ```
       
-      - if you do **NOT** have a domain name, it's possible to create your certificate directly with the public IP address (replace <FILL_ME_WITH_YOUR_IP_ADDRESS> with your public IP address)
+      - if you do **NOT** have a domain name, it's possible to create your certificate directly with the public IP address (replace <FILL_ME_WITH_YOUR_IP_ADDRESS> with your public IP address (there're 2 places))
         
         ```
         openssl req -new -sha256 \
             -key my_domain.key \
             -subj "/CN=<FILL_ME_WITH_YOUR_IP_ADDRESS>" \
             -reqexts v3_req \
-            -config <(cat /etc/ssl/openssl.cnf <(printf "\n[v3_req]\nextendedKeyUsage=serverAuth, clientAuth\nsubjectAltName=DNS:<FILL_ME_WITH_YOUR_IP_ADDRESS>")) \
+            -config <(cat /etc/ssl/openssl.cnf <(printf "\n[v3_req]\nextendedKeyUsage=serverAuth, clientAuth\nsubjectAltName=IP:<FILL_ME_WITH_YOUR_IP_ADDRESS>")) \
             -out my_domain.csr
         ```
    
@@ -157,11 +157,11 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
         	-CAcreateserial -out my_domain.crt -sha256
         ```
       
-      - if you use your IP address in the previous step, use the following code (replace <FILL_ME_WITH_YOUR_IP_ADDRESS> with your public IP address)
+      - if you use your IP address in the previous step, use the following code (replace <FILL_ME_WITH_YOUR_IP_ADDRESS> with your public IP address (there's 1 place))
         
         ```
         openssl x509 -req \
-        	-extfile <(printf "[v3_req]\nextendedKeyUsage=serverAuth,clientAuth\nsubjectAltName=DNS:<FILL_ME_WITH_YOUR_IP_ADDRESS>") 
+        	-extfile <(printf "[v3_req]\nextendedKeyUsage=serverAuth,clientAuth\nsubjectAltName=IP:<FILL_ME_WITH_YOUR_IP_ADDRESS>") 
         	-extensions v3_req -days 360 -in my_domain.csr -CA ../rootCA.crt -CAkey ../rootCA.key \
         	-CAcreateserial -out my_domain.crt -sha256
         ```
