@@ -1,191 +1,214 @@
-#include "client_session.h"
+#include "Client_session.h"
 
-void Client_session::start()
+void Client_session::do_out_async_connect()
 {
 	auto self = shared_from_this();
+	auto query = std::make_shared<boost::asio::ip::tcp::resolver::query>(config_.get_server_address(), std::to_string(config_.get_server_port()));
+
+	resolver_.async_resolve(*query, [this, self, query](const boost::system::error_code& ec, boost::asio::ip::tcp::resolver::results_type results) {
+		if (!ec)
+		{
+			boost::asio::async_connect(ssl_socket_.lowest_layer(), results, [this, self](const boost::system::error_code& ec, const boost::asio::ip::tcp::endpoint& ep) {
+				do_out_async_handshake();
+				});
+		}
+		else
+		{
+			std::cerr << "can't connect to server, failed to handle http proxy request\n";
+			destroy();
+		}
+		});
+}
+
+void Client_session::do_out_async_handshake()
+{
+	auto self = shared_from_this();
+	ssl_socket_.async_handshake(boost::asio::ssl::stream_base::client, [this, self](const boost::system::error_code& ec) {
+		if (ec)
+		{
+			std::cerr << ec.message();
+			destroy();
+			return;
+		}
 	do_in_async_read();
+		});
 }
 
 void Client_session::do_in_async_read()
 {
 	auto self = shared_from_this();
-	switch (read_state_)
-	{
-	case Client_session::BAD:
+	out_socket_.async_read_some(boost::asio::buffer(in_data_buf_, BUFFER_SIZE), [this, self](const boost::system::error_code& ec, size_t length) {
+		if (ec == boost::asio::error::operation_aborted)
 		return;
-	case Client_session::REQUEST:
-		boost::asio::async_read_until(ssl_socket_, in_read_buffer_, "\r\n",
-			std::bind(&Client_session::on_in_async_read_finished, this, self, std::placeholders::_1, std::placeholders::_2));
-		break;
-	case Client_session::HEAD:
-		boost::asio::async_read_until(ssl_socket_, in_read_buffer_, "\r\n\r\n",
-			std::bind(&Client_session::on_in_async_read_finished, this, self, std::placeholders::_1, std::placeholders::_2));
-		break;
-	case Client_session::HEAD_FINISHED:
+	if (ec)
 	{
-		break;
+		destroy();
+		return;
 	}
-	case Client_session::FORWARD:
-	{
-		ssl_socket_.async_read_some(boost::asio::buffer(in_data_buf_, BUFFER_SIZE), 
-			std::bind(&Client_session::on_in_async_read_finished, this, self, std::placeholders::_1, std::placeholders::_2));
-		break;
-	}
-	default:
-		break;
-	}
-}
-
-void Client_session::on_in_async_read_finished(self_ptr self_p, const boost::system::error_code& ec, size_t read_len)
-{
-	if (!ec)
-	{
-		switch (read_state_)
-		{
-
-		case Client_session::REQUEST:
-		{
-			std::istream data_stream(&in_read_buffer_);
-			std::string data;
-			std::getline(data_stream, data);
-			request_.read_head(data);
-			if (!request_.is_valid_proxy_request())
-			{
-				read_state_ = BAD;
-				do_in_async_write(self_p);
-				return;
-			}
-			read_state_ = HEAD;
-			do_in_async_read();
-			break;
-		}
-		case Client_session::HEAD:
-		{		
-			/*
-			std::getline(data_stream, data);
-			if (data != "\r")
-			{
-				request_.read_fields(data);
-				do_in_async_read();
-				break;
-			}
-			else 
-			*/
-			read_state_ = HEAD_FINISHED; // head read finished, do not break here, continue to HEAD FINISHED
-		}
-		case Client_session::HEAD_FINISHED:
-		{
-			in_read_buffer_.consume(in_read_buffer_.data().size());
-			do_in_async_write(self_p);
-			break;
-		}
-		case Client_session::FORWARD:
-		{	
-			if (first_out_write_)
-			{
-				do_out_async_write(self_p, read_len);
-				do_in_async_read();
-				first_out_write_ = false;
-			}
-			else
-			{
-				data_ptr data_copy = std::make_shared<std::string>((const char*)in_data_buf_, read_len);
-				out_socket_.async_send(boost::asio::buffer(*data_copy), [this, self_p, data_copy](const boost::system::error_code& ec, size_t send_len) {
-					do_in_async_read();
-					});
-			}
-		}
-		default:
-			break;
-		}
-	}
-}
-
-void Client_session::do_in_async_write(self_ptr self_p)
-{
-	switch (read_state_)
-	{
-	case Client_session::BAD:
-	{
-		auto error_data_ptr = std::make_shared<std::string>(HttpRequest::get_405_not_allowed_message());
-		in_write_helper(self_p, error_data_ptr);
-		break;
-	}
-	case Client_session::REQUEST:
-		break;
-	case Client_session::HEAD:
-	{
-		break;
-	}
-	case Client_session::HEAD_FINISHED:
-	{
-		// DEVELOPMENT NOTICE: rather, this should happen at server side in real application, we now place this at client side only for development purpose
-		boost::asio::ip::tcp::resolver::query query(request_.get_host(), request_.get_port());
-		resolver_.async_resolve(query, [this, self_p, &query](const boost::system::error_code& ec, boost::asio::ip::tcp::resolver::results_type results) {
-			if (!ec)
-			{
-				boost::asio::async_connect(out_socket_, results, [this, self_p](const boost::system::error_code& ec, const boost::asio::ip::tcp::endpoint& ep) {
-					if (!ec)
-					{
-						std::cerr << "accepted connection to " << request_.get_host() << ":" << request_.get_port() << std::endl;
-						data_ptr ok_data = std::make_shared<std::string>(HttpRequest::get_200_ok_message());
-						read_state_ = FORWARD;
-						do_in_async_write(ok_data);
-					}
-					else
-					{
-						destroy();
-						return;
-					}
-					});
-			}
-			else
-				read_state_ = BAD;
-			});
-	}
-	case Client_session::FORWARD:
-	{
-		break;
-	}
-	default:
-		break;
-	}
-}
-
-void Client_session::in_write_helper(self_ptr self_p,std::shared_ptr<std::string> data_ptr)
-{
-	boost::asio::async_write(ssl_socket_, boost::asio::buffer(*data_ptr), 
-		std::bind(&Client_session::on_in_async_write_finished, this, self_p, data_ptr, std::placeholders::_1, std::placeholders::_2));
-}
-
-void Client_session::out_write_helper(self_ptr self_p, std::shared_ptr<std::string> data_ptr)
-{
-	boost::asio::async_write(out_socket_, boost::asio::buffer(*data_ptr),
-		std::bind(&Client_session::on_out_async_write_finished, this, self_p, data_ptr, std::placeholders::_1, std::placeholders::_2));
-}
-
-
-void Client_session::on_in_async_write_finished(self_ptr self_p, data_ptr data_p, const boost::system::error_code& ec, size_t write_len)
-{
-	do_in_async_read();
-}
-
-void Client_session::do_out_async_write(self_ptr self_p, size_t read_len)
-{
-	data_ptr data_copy = std::make_shared<std::string>((const char*)in_data_buf_, read_len);
-	out_socket_.async_send(boost::asio::buffer(*data_copy), [this, self_p, data_copy](const boost::system::error_code& ec, size_t write_len) {
-		do_out_async_read(self_p);
+	raw_data_ptr raw_read_data = std::make_shared<boost::asio::const_buffer>(in_data_buf_, length);
+	on_in_received(raw_read_data);
 		});
 }
 
-void Client_session::do_out_async_read(self_ptr self_p)
+
+void Client_session::on_in_received(raw_data_ptr data)
 {
-	out_socket_.async_read_some(boost::asio::buffer(out_data_buf_, BUFFER_SIZE), 
-		std::bind(&Client_session::on_out_async_read_finished, this, self_p, std::placeholders::_1, std::placeholders::_2));
+	auto self = shared_from_this();
+	switch (read_state_)
+	{
+	case Client_session::BAD:
+		break;
+	case Client_session::REQUEST:
+	{
+		std::string recv_data{ (const char*)data->data() };
+		conn_esta_msg_ += recv_data;
+		if (conn_esta_msg_.find("\r\n\r\n") == std::string::npos)
+		{
+			do_in_async_read();
+			return;
+		}
+		std::istringstream data_stream(conn_esta_msg_);
+		std::string head;
+		std::getline(data_stream, head);
+		request_.read_head(head);
+		std::string field;
+		while (std::getline(data_stream, field))
+			if (field != "\r")
+				request_.read_fields(field);
+		data_ptr proxy_auth_ptr = std::make_shared<std::string>(request_.get_proxy_message(config_.get_password()));
+		std::cerr << "accepted connection to " + request_.get_host() + ":" + request_.get_port() + "\n";
+		boost::asio::async_write(ssl_socket_, boost::asio::buffer(*proxy_auth_ptr), [this, self, proxy_auth_ptr](const boost::system::error_code& ec, size_t length) {
+			if (ec)
+			{
+				destroy();
+				return;
+			}
+		read_state_ = FORWARD;
+		on_out_sent();
+			});
+
+		break;
+	}
+	case Client_session::FORWARD:
+	{
+		do_out_async_write(data);
+		break;
+	}
+	default:
+		break;
+	}
 }
 
-void Client_session::on_out_async_read_finished(self_ptr self_p, const boost::system::error_code& ec, size_t read_len)
+void Client_session::do_in_async_write(raw_data_ptr data)
 {
-	data_ptr data_copy = std::make_shared<std::string>((const char*)out_data_buf_, read_len);
-	in_write_helper(self_p, data_copy);
+	auto self = shared_from_this();
+	boost::asio::async_write(out_socket_, boost::asio::buffer(*data), [this, self, data](const boost::system::error_code& ec, size_t length) {
+		if (ec)
+		{
+			destroy();
+			return;
+		}
+	on_in_sent();
+		});
+}
+
+void Client_session::do_out_async_write(raw_data_ptr data)
+{
+	auto self = shared_from_this();
+	boost::asio::async_write(ssl_socket_, boost::asio::buffer(*data), [this, self, data](const boost::system::error_code& ec, size_t length) {
+		if (ec)
+		{
+			destroy();
+			return;
+		}
+	on_out_sent();
+		});
+}
+
+void Client_session::on_in_sent()
+{
+	switch (read_state_)
+	{
+	case Client_session::HEAD_FINISHED:
+	{
+		read_state_ = FORWARD;
+		do_in_async_read();
+		break;
+	}
+	case Client_session::FORWARD:
+	{
+		do_out_async_read();
+		break;
+	}
+	default:
+		break;
+	}
+}
+
+void Client_session::on_out_sent()
+{
+	do_in_async_read();
+	if (first_out_write_)
+	{
+		first_out_write_ = false;
+		do_out_async_read();
+	}
+}
+
+void Client_session::do_out_async_read()
+{
+	auto self = shared_from_this();
+	ssl_socket_.async_read_some(boost::asio::buffer(out_data_buf_, BUFFER_SIZE), [this, self](const boost::system::error_code& ec, size_t length)
+		{
+			if (ec)
+			{
+				destroy();
+				return;
+			}
+	raw_data_ptr data = std::make_shared<boost::asio::const_buffer>(out_data_buf_, length);
+	on_out_received(data);
+		});
+}
+
+void Client_session::on_out_received(raw_data_ptr data)
+{
+	do_in_async_write(data);
+}
+
+void Client_session::destroy()
+{
+	if (read_state_ == BAD)
+		return;
+	read_state_ = BAD;
+
+	boost::system::error_code ec;
+
+	resolver_.cancel();
+
+	if (ssl_socket_.next_layer().is_open())
+	{
+		auto self = shared_from_this();
+		auto ssl_shutdown_cb = [this, self](const boost::system::error_code error) {
+			if (error == boost::asio::error::operation_aborted)
+				return;
+			boost::system::error_code ec;
+			ssl_shutdown_timer.cancel();
+			ssl_socket_.next_layer().cancel(ec);
+			ssl_socket_.next_layer().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+			ssl_socket_.next_layer().close(ec);
+		};
+		ssl_socket_.next_layer().cancel(ec);
+		ssl_socket_.async_shutdown(ssl_shutdown_cb);
+		ssl_shutdown_timer.expires_after(std::chrono::seconds(120));
+		ssl_shutdown_timer.async_wait(ssl_shutdown_cb);
+	}
+
+	if (out_socket_.is_open())
+	{
+		out_socket_.cancel(ec);
+		out_socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+		out_socket_.close(ec);
+	}
+
+	std::cerr << "connection to " << ssl_socket_.next_layer().remote_endpoint().address() << " closed.\n";
 }

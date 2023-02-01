@@ -37,19 +37,34 @@ void Config::read_object_(boost::json::object& data)
         return temp;
     };
 
+    const auto check_internet_port_in_range = [](int64_t port) -> unsigned
+    {
+        if (port > 65535 || port < 0) {
+            throw incorrect_data_exception(std::string("unexpected port number: ") + std::to_string(port));
+        }
+        return static_cast<unsigned>(port);
+    };
+
     try
     {
         certificate_path_ = check_non_null_or_throw("certificate_path")->as_string().c_str();
         private_key_path_ = check_non_null_or_throw("private_key")->as_string().c_str();
         listening_address_ = check_non_null_or_throw("listening_address")->as_string().c_str();
         run_type_ = check_non_null_or_throw("run_type")->as_string().c_str();
-        long long listening_port_long = check_non_null_or_throw("listening_port")->as_int64();
+        server_address_ = check_non_null_or_throw("server_address")->as_string().c_str();
+        ca_path_ = check_non_null_or_throw("ca_path")->as_string().c_str();
+        password_ = check_non_null_or_throw("password")->as_string().c_str();
+        http_service_address_ = check_non_null_or_throw("http_service_address")->as_string().c_str();
+        
+
+        int64_t listening_port_long = check_non_null_or_throw("listening_port")->as_int64();
+        int64_t server_port_long = check_non_null_or_throw("server_port")->as_int64();
+        int64_t http_service_port_long = check_non_null_or_throw("http_service_port")->as_int64();
 
         // check port in range
-        if (listening_port_long > 65535 || listening_port_long < 0) {
-            throw incorrect_data_exception(std::string("unexpected port number: ") + std::to_string(listening_port_long));
-        }
-        listening_port_ = static_cast<unsigned short>(listening_port_long);
+        server_port_ = check_internet_port_in_range(server_port_long);
+        listening_port_ = check_internet_port_in_range(listening_port_long);
+        http_service_port_ = check_internet_port_in_range(http_service_port_long);
     }
     catch (std::invalid_argument& e)
     {

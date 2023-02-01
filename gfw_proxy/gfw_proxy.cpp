@@ -6,11 +6,19 @@
 #include "config.h"
 #include "server.h"
 
-int main()
+int main(int argc, char** argv)
 {
 	try
 	{
-		Config config("C:\\Users\\lry127\\source\\repos\\gfw_proxy\\x64\\Debug\\some");
+		Config config{};
+		if (argc < 2)
+		{
+			std::cerr << "usage: gfw-proxy <path_to_configure_file>\n";
+			config = Config("C:\\Users\\lry127\\source\\repos\\gfw_proxy\\x64\\Debug\\client.json");
+		}
+		else 
+			config = Config(argv[1]);
+		std::cerr << config.get_run_type() << std::endl;
 		std::cerr << config.get_certificate_path() << std::endl;
 		std::cerr << config.get_listening_port() << std::endl;
 		std::cerr << config.get_private_key_path() << std::endl;
@@ -21,7 +29,7 @@ int main()
 		server.run();
 		context.run();
 	}
-	catch (const std::exception& e)
+	catch (const boost::system::system_error& e)
 	{
 		std::cerr << e.what();
 	}

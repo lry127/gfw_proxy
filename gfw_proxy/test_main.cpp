@@ -4,10 +4,10 @@
 int main()
 {
 	HttpRequest req;
-	std::string tes1{ "Conne: refus." };
-	std::string tes2{ "wow: amazing" };
-	std::cerr << req.read_fields(tes1);
-	std::cerr << req.read_fields(tes2);
+	std::string tes1{ "Conne: csdarefus.\r\r\r\r\r" };
+	std::string test2{ "Proxy-Authorization:   i_love_cppE\r\r\n\r\n" };
 
-	std::cerr << req.get_field("Conne");
+	req.read_fields(tes1);
+	req.read_fields(test2);
+	std::cerr << req.get_field("Proxy-Authorization");
 }

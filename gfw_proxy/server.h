@@ -5,6 +5,7 @@
 #include <boost/asio/ssl.hpp>
 
 #include "config.h"
+#include "server_session.h"
 #include "client_session.h"
 
 class Server
@@ -17,6 +18,7 @@ private:
     void do_accept();
     const Config& config_;
     boost::asio::io_context& context_;
-    boost::asio::ssl::context ssl_context_;
+    boost::asio::ssl::context ssl_server_context_;
+    boost::asio::ssl::context ssl_client_context_;
     boost::asio::ip::tcp::acceptor acceptor_;
 };

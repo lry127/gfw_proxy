@@ -15,16 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="gfw_proxy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="config.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="server.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="client_session.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="httprequest.cpp">
@@ -33,7 +27,13 @@
     <ClCompile Include="test_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="client_session_impl.cpp">
+    <ClCompile Include="server_session.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gfw_proxy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="client_session.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -50,10 +50,13 @@
     <ClInclude Include="session.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="client_session.h">
+    <ClInclude Include="server_session.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="httprequest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="client_session.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

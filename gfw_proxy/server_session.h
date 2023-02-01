@@ -8,20 +8,20 @@
 #include "session.h"
 #include "httprequest.h"
 
-class Client_session final : public Session
+class Server_session final : public Session
 {
 public:
-	Client_session(boost::asio::io_context& context, boost::asio::ssl::context& ssl_context, boost::asio::ip::tcp::socket socket, const Config& config) :
-		Session(context, ssl_context, config), ssl_socket_(context, ssl_context), out_socket_(std::move(socket))
-		, resolver_(context) { ssl_socket_.set_verify_mode(boost::asio::ssl::verify_peer); }
-	void start() { do_out_async_connect(); };
-	~Client_session() override {}
+	Server_session(boost::asio::io_context& context, boost::asio::ssl::context& ssl_context, boost::asio::ip::tcp::socket socket, const Config& config) :
+		Session(context, ssl_context, config), ssl_socket_(std::move(socket), ssl_context_),out_socket_(context)
+	, resolver_(context){}
+	void start() { do_in_async_handshake(); };
+	~Server_session() override {}
 
 private:
 	using data_ptr = std::shared_ptr<std::string>;
 	using raw_data_ptr = std::shared_ptr<boost::asio::const_buffer>;
-	enum { BUFFER_SIZE = 1024 };
-	enum read_state { BAD, REQUEST, HEAD, HEAD_FINISHED, FORWARD } read_state_ = REQUEST;
+	enum { BUFFER_SIZE = 1024};
+	enum read_state { BAD, REQUEST, HEAD, HEAD_FINISHED, FORWARD} read_state_ = REQUEST;
 	boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket_;
 	boost::asio::ip::tcp::socket out_socket_;
 	boost::asio::ip::tcp::resolver resolver_;
@@ -29,8 +29,7 @@ private:
 	unsigned char out_data_buf_[BUFFER_SIZE]{};
 	std::string conn_esta_msg_;
 	HttpRequest request_;
-	void do_out_async_handshake();
-	void do_out_async_connect();
+	void do_in_async_handshake();
 	void do_in_async_read();
 	void do_in_async_write(raw_data_ptr data);
 	void do_out_async_write(raw_data_ptr data);
