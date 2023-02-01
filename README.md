@@ -9,7 +9,9 @@ We've long firmly held the belief that everyone in the world should have the sam
 
 ## How this software work?
 You (client) <---(the gfw)---> Proxy Server <-----> Internet
+
 ------->---------(can't directly access)-------->--------
+
 All data tranferring between you and your proxy server are encrypted (with modern tls1.3 protocol) and look similar to very normal https (http + tls) traffic as long as you send them to port 443 on proxy server.
 To receive service from your proxy server, you need to provide a password to help the server identify you from other normal https traffic. If the authorization process fails, you'll be redirect to another real http server and the proxy server acts like a real https server (thus the firewall will be unlikely to block your server just because it looks like a normal https server providing usual services (it doesn't know your password), in another word, you game it!)
 
