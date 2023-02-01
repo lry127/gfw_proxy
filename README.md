@@ -4,6 +4,7 @@ gfw-proxy is a open source software licensed under [GPL-3.0 license](LICENSE.txt
 ## Inspirations:
 We've long firmly held the belief that everyone in the world should have the same equality in accessing human knowledge, as well as the ability to enjoy the [Right to Internet access](https://en.wikipedia.org/wiki/Right_to_Internet_access)(or see below). But very unfortunately, if you live in a country where heavy censorship and control are applied everywhere in the internet, you might fail to enjoy your proper rights. Hopefully, we create this software trying our best to give them back to you.
 > Right to Internet Access:
+> 
 > ... all people must be able to access the Internet in order to exercise and enjoy their rights to freedom of expression and opinion and other fundamental human rights, that states have a responsibility to ensure that Internet access is broadly available, and that states may not unreasonably restrict an individual's access to the Internet. 
 
 ## How this software work?
