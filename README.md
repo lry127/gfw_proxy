@@ -1,4 +1,4 @@
-# gfw-proxy: a lightweight solution that helps you bypass the gfw elegantly
+# gfw-proxy
 
 ## Introduction:
 gfw-proxy is a open source software licensed under [GPL-3.0 license](LICENSE.txt) which aims to provide a secure and lightweiht method that helps you get rid of the [Great Firewall](https://en.wikipedia.org/wiki/Great_Firewall).
