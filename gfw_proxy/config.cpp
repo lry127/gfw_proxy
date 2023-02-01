@@ -47,24 +47,43 @@ void Config::read_object_(boost::json::object& data)
 
     try
     {
-        certificate_path_ = check_non_null_or_throw("certificate_path")->as_string().c_str();
-        private_key_path_ = check_non_null_or_throw("private_key")->as_string().c_str();
-        listening_address_ = check_non_null_or_throw("listening_address")->as_string().c_str();
-        run_type_ = check_non_null_or_throw("run_type")->as_string().c_str();
-        server_address_ = check_non_null_or_throw("server_address")->as_string().c_str();
-        ca_path_ = check_non_null_or_throw("ca_path")->as_string().c_str();
+        /*
+        required fields for both server and client:
+            [password, listening_address, listening_port]
+        specific for server:
+            [certificate_path, private_key_path, http_service_address, http_service_port]
+        specific for client:
+            [server_address, server_port, ca_path]
+        */
         password_ = check_non_null_or_throw("password")->as_string().c_str();
-        http_service_address_ = check_non_null_or_throw("http_service_address")->as_string().c_str();
         
-
+        listening_address_ = check_non_null_or_throw("listening_address")->as_string().c_str();
         int64_t listening_port_long = check_non_null_or_throw("listening_port")->as_int64();
-        int64_t server_port_long = check_non_null_or_throw("server_port")->as_int64();
-        int64_t http_service_port_long = check_non_null_or_throw("http_service_port")->as_int64();
-
-        // check port in range
-        server_port_ = check_internet_port_in_range(server_port_long);
         listening_port_ = check_internet_port_in_range(listening_port_long);
-        http_service_port_ = check_internet_port_in_range(http_service_port_long);
+
+        run_type_ = check_non_null_or_throw("run_type")->as_string().c_str();
+        if (run_type_ == "server")
+        {
+            certificate_path_ = check_non_null_or_throw("certificate_path")->as_string().c_str();
+            private_key_path_ = check_non_null_or_throw("private_key")->as_string().c_str();
+
+            http_service_address_ = check_non_null_or_throw("http_service_address")->as_string().c_str();
+            int64_t http_service_port_long = check_non_null_or_throw("http_service_port")->as_int64();
+            http_service_port_ = check_internet_port_in_range(http_service_port_long);
+        }
+        else if (run_type_ == "client")
+        {
+            ca_path_ = check_non_null_or_throw("ca_path")->as_string().c_str();
+
+            server_address_ = check_non_null_or_throw("server_address")->as_string().c_str();
+            int64_t server_port_long = check_non_null_or_throw("server_port")->as_int64();
+            server_port_ = check_internet_port_in_range(server_port_long);
+        }
+        else
+        {
+            std::cerr << "unknown run type: " << run_type_ << std::endl;
+            std::exit(-1);
+        }
     }
     catch (std::invalid_argument& e)
     {

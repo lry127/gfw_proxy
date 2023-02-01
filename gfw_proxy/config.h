@@ -2,6 +2,7 @@
 
 #include <string>
 #include <fstream>
+#include <iostream>
 #include <set>
 #include <boost/json.hpp>
 
