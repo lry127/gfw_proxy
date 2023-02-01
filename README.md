@@ -6,7 +6,7 @@ gfw-proxy is a open source software licensed under [GPL-3.0 license](LICENSE.txt
 
 ## Inspirations:
 
-We've long firmly held the belief that everyone in the world should have the same equality in accessing human knowledge, as well as the ability to enjoy the [Right to Internet access](https://en.wikipedia.org/wiki/Right_to_Internet_access)(or see below). But very unfortunately, if you live in a country where heavy censorship and control are applied everywhere in the internet, you might fail to enjoy your proper rights. Hopefully, we create this software trying our best to give them back to you.
+We've long firmly held the belief that everyone in the world should have the same equality in accessing human knowledge, as well as the ability to enjoy the [Right to Internet access](https://en.wikipedia.org/wiki/Right_to_Internet_access) (see below). But very unfortunately, if you live in a country where heavy censorship and control are applied everywhere in the internet, you might fail to enjoy your proper rights. Hopefully, we create this software trying our best to give them back to you.
 
 > Right to Internet Access:
 > 
@@ -80,7 +80,7 @@ if everything works well, you'll get some output says nginx is listening on port
 
 #### Step 2: get a working certificate
 
-Instead of teaching how to get a certificate from a public ca (certificate authority), I'll show you how to create your own one and trusted by yourself.
+Instead of teaching how to get a certificate from a public ca (certificate authority), I'll show you how to create your own one trusted by yourself.
 
 1. get a place to store the certificates
    
@@ -88,21 +88,23 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
    mkdir ~/certs && cd ~/certs
    ```
 
-2. create ca private key
+2. create ca 
    
-   ``` 
-   openssl genrsa -out rootCA.key 4096
-   ```
+   1. create  ca private key
+      
+      ```
+      openssl genrsa -out rootCA.key 4096
+      ```
+   
+   2. create root ca certificate
+      
+      ```
+      openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 3650 -out rootCA.crt
+      ```
+      
+      you need to answer some questions, if you don't know what to fill with, a simple `.` helps.
 
-3. create root ca certificate
-   
-   ```
-   openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 3650 -out rootCA.crt
-   ```
-   
-   you need to answer some questions, if you don't what to fill with, a `.` helps.
-
-4. create your certificate
+3. create your certificate
    
    1. get a place to store your certificates and private key
       
@@ -118,15 +120,60 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
    
    3. create your csr (certificate signing request) file
       
+      NOTE: You only need to to choose **ONE** way out of the following 2.
+      
       - if you have a subdomain name associate with your vps, use this way (replace <FILL_ME_WITH_YOUR_DNS_NAME> with your real domain name (there're 2 places))
         
         ```
         openssl req -new -sha256 \
             -key my_domain.key \
-            -subj "/O=My org/CN=<FILL_ME_WITH_YOUR_DNS_NAME>" \
+            -subj "/CN=<FILL_ME_WITH_YOUR_DNS_NAME>" \
             -reqexts v3_req \
             -config <(cat /etc/ssl/openssl.cnf <(printf "\n[v3_req]\nextendedKeyUsage=serverAuth, clientAuth\nsubjectAltName=DNS:<FILL_ME_WITH_YOUR_DNS_NAME>")) \
             -out my_domain.csr
         ```
       
-      - if you do **NOT** have a domain name, it's possible to create your certificate directly with the public IP address (replace <FILL_ME_WITH_YOUR_IP_ADDRESS> with your real IP address)
+      - if you do **NOT** have a domain name, it's possible to create your certificate directly with the public IP address (replace <FILL_ME_WITH_YOUR_IP_ADDRESS> with your public IP address)
+        
+        ```
+        openssl req -new -sha256 \
+            -key my_domain.key \
+            -subj "/CN=<FILL_ME_WITH_YOUR_IP_ADDRESS>" \
+            -reqexts v3_req \
+            -config <(cat /etc/ssl/openssl.cnf <(printf "\n[v3_req]\nextendedKeyUsage=serverAuth, clientAuth\nsubjectAltName=DNS:<FILL_ME_WITH_YOUR_IP_ADDRESS>")) \
+            -out my_domain.csr
+        ```
+   
+   4. use ca's private key to sign the request you just created, generating the certificate
+      
+      NOTE: You only need to to choose **ONE** way out of the following 2, and this way should be the **SAME** as you chose in the previous step
+      
+      - if you have a subdomain name associate with your vps, use this way (replace  <FILL_ME_WITH_YOUR_DNS_NAME> with your real domain name (there's 1 place))
+        
+        ```
+        openssl x509 -req \
+        	-extfile <(printf "[v3_req]\nextendedKeyUsage=serverAuth,clientAuth\nsubjectAltName=DNS:<FILL_ME_WITH_YOUR_DNS_NAME>") 
+        	-extensions v3_req -days 360 -in my_domain.csr -CA ../rootCA.crt -CAkey ../rootCA.key \
+        	-CAcreateserial -out my_domain.crt -sha256
+        ```
+      
+      - if you use your IP address in the previous step, use the following code (replace <FILL_ME_WITH_YOUR_IP_ADDRESS> with your public IP address)
+        
+        ```
+        openssl x509 -req \
+        	-extfile <(printf "[v3_req]\nextendedKeyUsage=serverAuth,clientAuth\nsubjectAltName=DNS:<FILL_ME_WITH_YOUR_IP_ADDRESS>") 
+        	-extensions v3_req -days 360 -in my_domain.csr -CA ../rootCA.crt -CAkey ../rootCA.key \
+        	-CAcreateserial -out my_domain.crt -sha256
+        ```
+
+4. verify your certificates you've created so far
+   
+   Now you'll need to review what's been done so far. By typing `ls` in the command line, you should see the the directory containing the following stuffs:
+   
+   - `my_domain.key ` this is your private key, remember path to it, you'll need it later
+   
+   - `my_domain.csr` this is your csr file, you **don't** need it anymore
+   
+   - `my_domain.crt` this is your certificate, remember path to it, you'll need it later
+   
+   #### Step 3: Compile the source code to obtain
