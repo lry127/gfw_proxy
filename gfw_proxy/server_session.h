@@ -14,7 +14,17 @@ public:
 	Server_session(boost::asio::io_context& context, boost::asio::ssl::context& ssl_context, boost::asio::ip::tcp::socket socket, const Config& config) :
 		Session(context, ssl_context, config), ssl_socket_(std::move(socket), ssl_context_),out_socket_(context)
 	, resolver_(context){}
-	void start() { do_in_async_handshake(); };
+	void start() 
+	{ 
+		try
+		{
+			do_in_async_handshake();
+		}
+		catch (const std::exception&)
+		{
+			destroy();
+		}
+	}
 	~Server_session() override {}
 
 private:
