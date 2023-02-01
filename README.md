@@ -18,3 +18,7 @@ All data tranferring between you and your proxy server are encrypted (with moder
 To receive service from your proxy server, you need to provide a password to help the server identify you from other normal https traffic. If the authorization process fails, you'll be redirect to another real http server and the proxy server acts like a real https server (thus the firewall will be unlikely to block your server just because it looks like a normal https server providing usual services (it doesn't know your password), in another word, you game it!)
 
 ## Installation
+To completely get software working, you need to set up **both** server side and client side.
+
+### Server Side Configurations
+1. 
