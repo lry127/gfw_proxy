@@ -2,9 +2,9 @@
 
 ## Introduction:
 
-gfw-proxy is a open source software licensed under [GPL-3.0 license](LICENSE.txt) which aims to provide a secure and lightweight method that helps you get rid of the [Great Firewall](https://en.wikipedia.org/wiki/Great_Firewall).
+gfw-proxy is a open source software licensed under [GPL-3.0 license](LICENSE.txt) which aims at providing a secure and lightweight solution that helps you get rid of the [Great Firewall](https://en.wikipedia.org/wiki/Great_Firewall).
 
-## Inspirations:
+## Inspiration:
 
 We've long firmly held the belief that everyone in the world should have the same equality in accessing human knowledge, as well as the ability to enjoy the [Right to Internet access](https://en.wikipedia.org/wiki/Right_to_Internet_access) (see below). But very unfortunately, if you live in a country where heavy censorship and control are applied everywhere in the internet, you might fail to enjoy your proper rights. Hopefully, we create this software trying our best to give them back to you.
 
@@ -12,21 +12,19 @@ We've long firmly held the belief that everyone in the world should have the sam
 
 ## How this software work?
 
-You (client) <---(the gfw)---> Proxy Server <-----> Internet
-
-------->---------(can't directly access)-------->--------
+You (client) <---(the gfw)---> Proxy Server <------> Internet
 
 All data transferring between you and your proxy server are encrypted (with modern tls1.3 protocol) and look similar to very normal https (http + tls) traffic as long as you send them to port 443 on proxy server.
 
-To receive service from your proxy server, you need to provide a password to help the server identify you from other normal https traffic. If the authorization process fails, you'll be redirect to another real http server and the proxy server acts like a real https server (thus the firewall will be unlikely to block your server just because it looks like a normal https server providing usual services (it doesn't know your password), in another word, you game it!)
+To receive service from your proxy server, you need to provide a password to help the server identify you from other normal https traffic. If the authorization process fails, you'll be redirect to another real http server and the proxy server acts like a real https server (thus the firewall will be unlikely to block your server because it looks like a normal https server providing usual services).
 
 ## Installation
 
 To get the software working, you need to set up on **both** server side and client side, if didn't yet have any experience in configuring an application, don't worry, the rest of the passage will show you how to do so step by step.
 
-### Server Side Configurations
+### Server Side Configuration
 
-Introductions:
+Introduction:
 
 To get the server working, you'll need...
 
@@ -42,7 +40,7 @@ To get the server working, you'll need...
 
 #### Step 1: get a working http server.
 
- This is quit easy to do. All you have to do is to install one. For me, I prefer nginx, so I'll show you how to install it here.
+ This is quite easy to do. All you have to do is to install one. For me, I prefer nginx, so I'll show you how to install it here.
 
 Now I suppose you've successfully logged into your vps (via ssh, for example).
 
@@ -150,18 +148,18 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
         
         ```
         openssl x509 -req \
-        	-extfile <(printf "[v3_req]\nextendedKeyUsage=serverAuth,clientAuth\nsubjectAltName=DNS:<FILL_ME_WITH_YOUR_DNS_NAME>") 
-        	-extensions v3_req -days 360 -in my_domain.csr -CA ../rootCA.crt -CAkey ../rootCA.key \
-        	-CAcreateserial -out my_domain.crt -sha256
+            -extfile <(printf "[v3_req]\nextendedKeyUsage=serverAuth,clientAuth\nsubjectAltName=DNS:<FILL_ME_WITH_YOUR_DNS_NAME>") 
+            -extensions v3_req -days 360 -in my_domain.csr -CA ../rootCA.crt -CAkey ../rootCA.key \
+            -CAcreateserial -out my_domain.crt -sha256
         ```
       
       - if you use your IP address in the previous step, use the following code (replace <FILL_ME_WITH_YOUR_IP_ADDRESS> with your public IP address (there's 1 place))
         
         ```
         openssl x509 -req \
-        	-extfile <(printf "[v3_req]\nextendedKeyUsage=serverAuth,clientAuth\nsubjectAltName=IP:<FILL_ME_WITH_YOUR_IP_ADDRESS>") 
-        	-extensions v3_req -days 360 -in my_domain.csr -CA ../rootCA.crt -CAkey ../rootCA.key \
-        	-CAcreateserial -out my_domain.crt -sha256
+            -extfile <(printf "[v3_req]\nextendedKeyUsage=serverAuth,clientAuth\nsubjectAltName=IP:<FILL_ME_WITH_YOUR_IP_ADDRESS>") 
+            -extensions v3_req -days 360 -in my_domain.csr -CA ../rootCA.crt -CAkey ../rootCA.key \
+            -CAcreateserial -out my_domain.crt -sha256
         ```
 
 4. verify your certificates you've created so far
@@ -174,4 +172,132 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
    
    - `my_domain.crt` this is your certificate, remember path to it, you'll need it later
    
-   #### Step 3: Compile the source code to obtain
+   #### Step 3: Obtain a copy of the server executable file
+   
+   1. get a place to store the file
+      
+      ```
+      mkdir ~/gfw_proxy && cd ~/gfw_proxy
+      ```
+   
+   2. use wget to get the server executable file
+      
+      ```
+      wget https://github.com/lry127/gfw_proxy/releases/download/v0.1-beta.3/linux-amd64.tar.gz
+      ```
+   
+   3. extract the runnable
+      
+      ```
+      tar xf ./linux-amd64.tar.gz 
+      ```
+   
+   4. verify the software's working
+      
+      ```
+      ./gfw_proxy
+      ```
+      
+      if it works, it should output the following things
+      
+      ```
+      usage: gfw-proxy <path_to_configure_file>
+      ```
+      
+      otherwise, it's not working, use a search engine to see what's wrong
+      
+      #### Step 4: Write the server side config file
+      
+      1. Replace the following things in "<>"
+         
+         ```
+         {
+             "run_type": "server",
+             "password": "<YOUR_PASSWORD>",
+             "certificate_path": "<PATH_TO_CERTIFICATE>",
+             "private_key": "<PATH_TO_CERTIFICATE_KEY>",
+             "listening_address": "0.0.0.0",
+             "listening_port": 443,
+             "http_service_address": "localhost",
+             "http_service_port": 80
+         }
+         ```
+         
+         - <YOUR_PASSWORD>: your password
+         
+         - <PATH_TO_CERTIFICATE>: where your certificate is stored, if you follow the guide strictly, you can see where it's located at by this command (you should copy the output)
+           
+           ```
+           ls $HOME/certs/my_certs/my_domain.crt
+           ```
+         
+         - <PATH_TO_CERTIFICATE_KEY>: where your private key is stored, if you follow the guide strictly, you can see where it's located at by this command (you should copy the output)
+           
+           
+           
+           ```
+           ls $HOME/certs/my_certs/my_domain.key
+           ```
+      
+      2. The sample config file might look like this:
+         
+         ```
+         {
+             "run_type": "server",
+             "password": "U35RY3KyMnhl",
+             "certificate_path": "/root/certs/my_certs/my_domain.crt",
+             "private_key": "/root/certs/my_certs/my_domain.key",
+             "listening_address": "0.0.0.0",
+             "listening_port": 443,
+             "http_service_address": "localhost",
+             "http_service_port": 80
+         }
+         ```
+      
+      3. now write the config to a file called `server.json`
+         
+         ```
+         echo "{
+             \"run_type\": \"server\",
+            \"password\": \"U35RY3KyMnhl\",
+             \"certificate_path\": \"/root/certs/my_certs/my_domain.crt\",
+             \"private_key\": \"/root/certs/my_certs/my_domain.key\",
+             \"listening_address\": \"0.0.0.0\",
+             \"listening_port\": 443,
+             \"http_service_address\": \"localhost\",
+             \"http_service_port\": 80
+         }" > server.json
+         ```
+      
+      4. run the server:
+         
+         ```
+         sudo ./gfw_proxy ./server.json
+         ```
+         
+         if it's working, you might get the following output:
+         
+         ```
+         gfw-proxy start running...
+         run type: server
+         listening on: 0.0.0.0:443
+         using costum certificate: /root/certs/my_certs/my_domain.pem
+         using costum private key: /root/certs/my_certs/my_domain.key
+         fallback http service is running on: localhost:80
+         ```
+         
+         then you're **DONE**! CONGRATULATIONS!
+      
+      5. now you'll need to run the server in background and you can safely disconnect from your ssh server. **First press `CTRL+C`**, then type:
+         
+         ```
+         sudo nohup ./gfw_proxy ./server.json &
+         ```
+      
+      6. verify it:
+         
+         ```
+         sudo lsof -i:443
+         ```
+         
+         you'll expect it output something
