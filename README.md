@@ -301,3 +301,5 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
          ```
          
          you'll expect it output something
+
+### Client Side Configuration

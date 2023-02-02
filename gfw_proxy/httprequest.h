@@ -31,6 +31,7 @@ private:
 	bool valid_proxy_request_ = false;
 	void read_host_port_info();
 	method method_;
+	bool is_https_proxy;
 	std::string method_str_;
 	std::string target_;
 	http_version version_;

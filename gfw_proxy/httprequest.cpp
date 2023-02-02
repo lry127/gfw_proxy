@@ -9,11 +9,17 @@ void HttpRequest::read_head(const std::string& head_data)
 	head_stream >> method >> target >> version;
 
 	if (method == "CONNECT")
-		method_ = CONNECT;
-	else 
-		method_ = OTHERS;
+	{
+		is_https_proxy = true;
+		auto pos = target.find(":");
+		host_ = target.substr(0, pos);
+		port_ = target.substr(pos + 1);
+	}
+	else
+		is_https_proxy = false;
 
 	method_str_ = method;
+
 	target_ = target;
 
 	if (version == "HTTP/1.1")
@@ -80,29 +86,12 @@ bool HttpRequest::check_valid_proxy_request(const std::string& password)
 	
 }
 
-std::string HttpRequest::get_200_ok_message()
-{
-	return "HTTP/1.1 200 OK\r\n\r\n";
-}
-
-std::string HttpRequest::get_404_not_found_message()
-{
-	return "HTTP/1.1 404 Not Found\r\nConnection: Close\r\n\r\n";
-}
-
-std::string HttpRequest::get_405_not_allowed_message()
-{
-	static const std::string content{ "<html><h1>405 Method Not Allowed.</h1></html>" };
-	return std::string("HTTP/1.1 405 Method Not Allowed\r\nConnection: Close\r\nContent-Length: ") + std::to_string(content.size())
-		+ "\r\n\r\n" + content;
-}
-
 std::string HttpRequest::get_proxy_message(const std::string& password)
 {
 	read_host_port_info();
 	std::string req;
 
-	if (port_ == "80")
+	if (!is_https_proxy)
 	{
 		// since the request will be sent to the real server
 		// other than only other proxy server, we need to
@@ -136,12 +125,14 @@ std::string HttpRequest::get_proxy_message(const std::string& password)
 
 void HttpRequest::read_host_port_info()
 {
-	std::string host_port_data = get_field("Host");
-	
+	if (is_https_proxy)
+		return;
+
+	auto& host_port_data = get_field("Host");
 	auto pos = host_port_data.find(':');
+
 	if (pos == std::string::npos)
 	{
-		// there's no ':' in Host field, default to 80
 		host_ = host_port_data;
 		port_ = "80";
 	}
@@ -160,4 +151,21 @@ std::string HttpRequest::parse_plain_http_request()
 		if (field != "Proxy-Authorization")
 			req += field + ": " + data + "\r\n";
 	return req + "\r\n";
+}
+
+std::string HttpRequest::get_200_ok_message()
+{
+	return "HTTP/1.1 200 OK\r\n\r\n";
+}
+
+std::string HttpRequest::get_404_not_found_message()
+{
+	return "HTTP/1.1 404 Not Found\r\nConnection: Close\r\n\r\n";
+}
+
+std::string HttpRequest::get_405_not_allowed_message()
+{
+	static const std::string content{ "<html><h1>405 Method Not Allowed.</h1></html>" };
+	return std::string("HTTP/1.1 405 Method Not Allowed\r\nConnection: Close\r\nContent-Length: ") + std::to_string(content.size())
+		+ "\r\n\r\n" + content;
 }
