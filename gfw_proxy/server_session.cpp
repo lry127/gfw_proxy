@@ -57,7 +57,7 @@ void Server_session::on_in_received(raw_data_ptr data)
 		std::shared_ptr<boost::asio::ip::tcp::resolver::query> query;
 		if (!request_.is_valid_proxy_request(config_.get_password()))
 		{
-			// the proxy request in invalid (eg. either not CONNECT method or incorrect password
+			// the proxy request in invalid (provided incorrect password or no password)
 			// we forword this request to a pre-configured real http server to provide service
 			query.reset(new boost::asio::ip::tcp::resolver::query(config_.get_http_service_address(), std::to_string(config_.get_http_service_port())));
 		}
@@ -75,20 +75,31 @@ void Server_session::on_in_received(raw_data_ptr data)
 
 						if (request_.is_valid_proxy_request(config_.get_password()))
 						{
-							read_state_ = HEAD_FINISHED;
 							std::cerr << "accepted connection to " << request_.get_host() << ":" << request_.get_port() << std::endl;
-							data_ptr ok_data_str = std::make_shared <std::string>(HttpRequest::get_200_ok_message());
-							boost::asio::async_write(ssl_socket_, boost::asio::buffer(*ok_data_str), [this, self, ok_data_str](const boost::system::error_code& ec, size_t len) {
+							if (request_.get_port() == "80")
+							{
+								data_ptr original_data_ptr = std::make_shared<std::string>(request_.parse_plain_http_request());
+								boost::asio::async_write(out_socket_, boost::asio::buffer(*original_data_ptr), [this, self, original_data_ptr](const boost::system::error_code& ec, size_t len) {
+									read_state_ = FORWARD;
+									on_out_sent();
+									});
+							}
+							else
+							{
+								data_ptr ok_data_str = std::make_shared <std::string>(HttpRequest::get_200_ok_message());
+								boost::asio::async_write(ssl_socket_, boost::asio::buffer(*ok_data_str), [this, self, ok_data_str](const boost::system::error_code& ec, size_t len) {
+									read_state_ = HEAD_FINISHED;
 								on_in_sent();
-								});
+									});
+							}
 						}
 						else
 						{
-							read_state_ = FORWARD;
 							std::cerr << "unrecongnized http request, redirecting to http sercive... (from: " << ssl_socket_.next_layer().remote_endpoint().address() << ")\n";
 							// now forward the original http message to the real http server
 							data_ptr original_data_ptr = std::make_shared<std::string>(conn_esta_msg_);
 							boost::asio::async_write(out_socket_, boost::asio::buffer(*original_data_ptr), [this, self, original_data_ptr](const boost::system::error_code& ec, size_t len) {
+								read_state_ = FORWARD;
 								on_out_sent();
 								});
 						}

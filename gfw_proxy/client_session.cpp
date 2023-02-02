@@ -210,5 +210,5 @@ void Client_session::destroy()
 		out_socket_.close(ec);
 	}
 
-	std::cerr << "connection to " << ssl_socket_.next_layer().remote_endpoint(ec).address() << " closed.\n";
+	std::cerr << "connection to " << request_.get_host() + ":" + request_.get_port() << " closed.\n";
 }

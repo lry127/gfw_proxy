@@ -11,30 +11,16 @@ void HttpRequest::read_head(const std::string& head_data)
 	if (method == "CONNECT")
 		method_ = CONNECT;
 	else 
-	{
 		method_ = OTHERS;
-		valid_proxy_request_ = false;
-		return;
-	}
-		
-	// now read the target
-	auto pos = target.find(':');
-	if (pos == std::string::npos)
-	{
-		valid_proxy_request_ = false;
-		return;
-	}
-	host_ = target.substr(0, pos);
-	port_ = target.substr(pos + 1);
+
+	method_str_ = method;
+	target_ = target;
 
 	if (version == "HTTP/1.1")
-	{
 		version_ = HTTP_1_1;
-	}
 	else
 	{
 		version_ = HTTP_OTHERS;
-		valid_proxy_request_ = false;
 		return;
 	}
 
@@ -74,10 +60,6 @@ bool HttpRequest::read_fields(const std::string& fields_data)
 
 bool HttpRequest::check_valid_proxy_request(const std::string& password)
 {
-	// first check the format of the request
-	if (!valid_proxy_request_)
-		return false;
-
 	/* check if the request contains proper password
 	note that though here we use "Proxy-Authorization" field
 	it doesn't necessarily mean that we'll strict follow the
@@ -86,8 +68,12 @@ bool HttpRequest::check_valid_proxy_request(const std::string& password)
 	well as security reasons (the transfer is encrypted
 	under secure tls1.3 traffic)
 	*/
-	if (get_field("Proxy-Authorization") != password)
+	if (!valid_proxy_request_ || get_field("Proxy-Authorization") != password)
 		return false;
+
+	// now this is a valid proxy request
+	// we need to know which server it wants to connect to
+	read_host_port_info();
 
 	// check finished, everything's ok
 	return true;
@@ -113,21 +99,65 @@ std::string HttpRequest::get_405_not_allowed_message()
 
 std::string HttpRequest::get_proxy_message(const std::string& password)
 {
-	if (host_.empty() && port_.empty())
+	read_host_port_info();
+	std::string req;
+
+	if (port_ == "80")
 	{
-		std::string host_port_data = get_field("Host");
-		auto pos = host_port_data.find(":");
-		if (pos == std::string::npos)
-		{
-			host_ = host_port_data;
-			port_ = "80";
-		}
+		// since the request will be sent to the real server
+		// other than only other proxy server, we need to
+		// add the original field info to the req
+		req = std::string(method_str_);
+		
+		auto pos = target_.find("://");
+		pos = target_.find('/', pos + 3);
+		req += " " + target_.substr(pos);
+		req += " HTTP/1.1\r\n";
+
+		for (auto& [field, data] : fields_)
+			if (field != "Proxy-Connection")
+				req += field + ": " + data + "\r\n";
+			else
+				req += "Connection: " + data + "\r\n";
+	}
+	else
+	{
+		req = std::string("CONNECT ");
+		req += get_host() + ":" + get_port() + " ";
+		req += "HTTP/1.1\r\n";
+		req += "Host: " + get_host() + ":" + get_port() + "\r\n";
 	}
 
-	std::string req("CONNECT ");
-	req += get_host() + ":" + get_port() + " ";
-	req += "HTTP/1.1\r\n";
 	req += "Proxy-Authorization: " + password;
-	req += "\r\n\r\n";
-	return req;
+	req += "\r\n";
+
+	return req + "\r\n";
+}
+
+void HttpRequest::read_host_port_info()
+{
+	std::string host_port_data = get_field("Host");
+	
+	auto pos = host_port_data.find(':');
+	if (pos == std::string::npos)
+	{
+		// there's no ':' in Host field, default to 80
+		host_ = host_port_data;
+		port_ = "80";
+	}
+	else
+	{
+		host_ = host_port_data.substr(0, pos);
+		port_ = host_port_data.substr(pos + 1);
+	}
+}
+
+std::string HttpRequest::parse_plain_http_request()
+{
+	std::string req(method_str_);
+	req += " " + target_ + " HTTP/1.1\r\n";
+	for (auto& [field, data] : fields_)
+		if (field != "Proxy-Authorization")
+			req += field + ": " + data + "\r\n";
+	return req + "\r\n";
 }

@@ -22,13 +22,17 @@ public:
 	bool is_valid_proxy_request(const std::string& password) { return check_valid_proxy_request(password); }
 	const std::string& get_field(const std::string& key) { return fields_[key]; } // todo: add boundary checking
 	std::string get_proxy_message(const std::string&);
+	std::string parse_plain_http_request();
 	static std::string get_200_ok_message();
 	static std::string get_405_not_allowed_message();
 	static std::string get_404_not_found_message();
 private:
 	bool check_valid_proxy_request(const std::string& password);
 	bool valid_proxy_request_ = false;
+	void read_host_port_info();
 	method method_;
+	std::string method_str_;
+	std::string target_;
 	http_version version_;
 	std::string host_;
 	std::string port_;
