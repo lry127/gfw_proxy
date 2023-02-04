@@ -16,8 +16,11 @@ public:
 
 protected:
 	typedef std::shared_ptr<Session> self_ptr;
+	static std::string bytes_to_readable(size_t size_in_byte);
 	boost::asio::io_context& context_;
 	boost::asio::ssl::context& ssl_context_;
 	boost::asio::steady_timer ssl_shutdown_timer;
 	const Config& config_;
+	size_t recevied_size_ = 0;
+	size_t upload_size_ = 0;
 };

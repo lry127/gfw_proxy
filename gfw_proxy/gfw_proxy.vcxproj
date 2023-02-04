@@ -143,6 +143,7 @@
     <ClCompile Include="config.cpp" />
     <ClCompile Include="httprequest.cpp" />
     <ClCompile Include="server.cpp" />
+    <ClCompile Include="session.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="client_session.h" />

@@ -157,15 +157,3 @@ std::string HttpRequest::get_200_ok_message()
 {
 	return "HTTP/1.1 200 OK\r\n\r\n";
 }
-
-std::string HttpRequest::get_404_not_found_message()
-{
-	return "HTTP/1.1 404 Not Found\r\nConnection: Close\r\n\r\n";
-}
-
-std::string HttpRequest::get_405_not_allowed_message()
-{
-	static const std::string content{ "<html><h1>405 Method Not Allowed.</h1></html>" };
-	return std::string("HTTP/1.1 405 Method Not Allowed\r\nConnection: Close\r\nContent-Length: ") + std::to_string(content.size())
-		+ "\r\n\r\n" + content;
-}

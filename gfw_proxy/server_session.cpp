@@ -121,6 +121,7 @@ void Server_session::on_in_received(raw_data_ptr data)
 	}
 	case Server_session::FORWARD:
 	{
+		upload_size_ += data->size();
 		do_out_async_write(data);
 		break;
 	}
@@ -202,6 +203,7 @@ void Server_session::do_out_async_read()
 
 void Server_session::on_out_received(raw_data_ptr data)
 {
+	recevied_size_ += data->size();
 	do_in_async_write(data);
 }
 
@@ -240,5 +242,6 @@ void Server_session::destroy()
 		out_socket_.close(ec);
 	}
 
-	std::cerr << "connection to " << ssl_socket_.next_layer().remote_endpoint(ec).address() <<  " closed.\n";
+	std::cerr << "connection to " << request_.get_host() + ":" + request_.get_port() << " closed. Sent: " << bytes_to_readable(upload_size_)
+		<< " Recevied: " << bytes_to_readable(recevied_size_) << std::endl;
 }

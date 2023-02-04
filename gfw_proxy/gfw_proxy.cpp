@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 	{
 		if (argc < 2)
 		{
-			std::cerr << "usage: gfw-proxy <path_to_configure_file>\n";
+			std::cerr << "usage: gfw-proxy <path_to_config_file>\n";
 			std::exit(-1);
 		}
 
@@ -22,14 +22,14 @@ int main(int argc, char** argv)
 		std::cerr << "listening on: " << config.get_listening_address() << ":" << config.get_listening_port() << std::endl;
 		if (config.get_run_type() == "server")
 		{
-			std::cerr << "using costum certificate: " << config.get_certificate_path() << std::endl;
-			std::cerr << "using costum private key: " << config.get_private_key_path() << std::endl;
+			std::cerr << "using certificate: " << config.get_certificate_path() << std::endl;
+			std::cerr << "using private key: " << config.get_private_key_path() << std::endl;
 			std::cerr << "fallback http service is running on: " << config.get_http_service_address() << ":" << config.get_http_service_port() << std::endl;
 		}
 		else
 		{
 			std::cerr << "server is running on: " << config.get_server_address() << ":" << config.get_server_port() << std::endl;
-			std::cerr << "using costum ca file to verify server: " << config.get_ca_path() << std::endl;
+			std::cerr << "using ca file to verify server: " << config.get_ca_path() << std::endl;
 		}
 
 		boost::asio::io_context context;
