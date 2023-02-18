@@ -367,7 +367,7 @@ There are many methods available to you to get the root ca file, if you know how
 
 1. enter the gfw-proxy folder by double clicking the gfw-proxy
 
-2. click the path (see the picture) [path](path.png)
+2. click the path (see the picture) ![path](path.png)
 
 3. type `cmd` and hit `Enter` on your keyboard
 
@@ -393,7 +393,7 @@ There are many methods available to you to get the root ca file, if you know how
 
 2. now type `about:preferences#general` and scroll down to the bottom, where you can see `Network Settings`. Click `Settings`.
 
-3. do the same as [mine](firefox_config.png), click ok when you're finished.
+3. do the same as ![mine](firefox_config.png), click ok when you're finished.
 
 4. now you're **DONE!!** Enjoy your work!
 
