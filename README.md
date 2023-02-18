@@ -183,7 +183,7 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
    2. use wget to get the server executable file
       
       ```
-      wget https://github.com/lry127/gfw_proxy/releases/download/v0.1-beta.3/linux-amd64.tar.gz
+      wget https://github.com/lry127/gfw_proxy/releases/download/v0.1-ga.1/linux-amd64.gz
       ```
    
    3. extract the runnable
@@ -333,7 +333,7 @@ There are many methods available to you to get the root ca file, if you know how
 
 #### Step 2: Obtaining the executable
 
-1. please download [here](https://github.com/lry127/gfw_proxy/releases/download/v0.1-beta.3/windows-amd64.zip). (suppose you're using 64 bit Windows operating system)
+1. please download  [here](https://github.com/lry127/gfw_proxy/releases/download/v0.1-ga.1/windows-amd64.zip). (suppose you're using 64 bit Windows operating system)
 
 2. after downloading the .zip file, unzip it. (you need to right click the file and select Extract All...)
 
