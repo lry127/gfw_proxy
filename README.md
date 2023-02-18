@@ -232,15 +232,13 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
            ```
          
          - <PATH_TO_CERTIFICATE_KEY>: where your private key is stored, if you follow the guide strictly, you can see where it's located at by this command (you should copy the output)
-           
-           
-           
+
            ```
            ls $HOME/certs/my_certs/my_domain.key
            ```
-      
+    
       2. The sample config file might look like this:
-         
+    
          ```
          {
              "run_type": "server",
@@ -253,9 +251,9 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
              "http_service_port": 80
          }
          ```
-      
+    
       3. now write the config to a file called `server.json`
-         
+    
          ```
          echo "{
              \"run_type\": \"server\",
@@ -268,15 +266,15 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
              \"http_service_port\": 80
          }" > server.json
          ```
-      
+    
       4. run the server:
-         
+    
          ```
          sudo ./gfw_proxy ./server.json
          ```
-         
+    
          if it's working, you might get the following output:
-         
+    
          ```
          gfw-proxy start running...
          run type: server
@@ -285,21 +283,124 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
          using costum private key: /root/certs/my_certs/my_domain.key
          fallback http service is running on: localhost:80
          ```
-         
+    
          then you're **DONE**! CONGRATULATIONS!
-      
+    
       5. now you'll need to run the server in background and you can safely disconnect from your ssh server. **First press `CTRL+C`**, then type:
-         
+    
          ```
          sudo nohup ./gfw_proxy ./server.json &
          ```
-      
+    
       6. verify it:
-         
+    
          ```
          sudo lsof -i:443
          ```
-         
+    
          you'll expect it output something
 
 ### Client Side Configuration
+
+Introduction:
+
+To get the client run, all you need are merely a configuration file telling the program about your server and the root CA you just created.
+
+#### Step 1: Obtaining the Root CA file
+
+There are many methods available to you to get the root ca file, if you know how to do so, just get it and skip this step.
+
+- Getting it using scp (supposing you're using root account)
+  
+  ```
+  scp root@<MY_IP_OR_DOMAIN>:~/certs/rootCA.crt .
+  ```
+
+- Getting it using https (please first connect to your server)
+  
+  ```
+  cp ~/certs/rootCA.crt /var/www/html
+  chmod 644 /var/www/html/rootCA.crt
+  ```
+  
+  now you can get it using your browser:
+  
+  `https://<MY_IP_OR_DOMAIN>/rootCA.crt`
+  
+  you may need to ignore warnings your browser complaining about, it's normal.
+  
+  
+
+#### Step 2: Obtaining the executable
+
+1. please download [here](https://github.com/lry127/gfw_proxy/releases/download/v0.1-beta.3/windows-amd64.zip). (suppose you're using 64 bit Windows operating system)
+
+2. after downloading the .zip file, unzip it. (you need to right click the file and select Extract All...)
+
+3. now we call the folder you extracted from previous step `gfw-proxy`
+   
+   
+
+#### Step 3: Create the config file
+
+1. create a plain text file (.txt), rename it to `client.txt` (or `client.json` if you know how to modify the postfix of a file, it doesn't matter, but you need to remember the name)
+
+2. open the file you just created
+
+3. add the following fields, make sure they match the server configuration file
+   
+   ```
+   {
+       "run_type": "client",
+       "password": "<YOUR_PASSWORD>",
+       "listening_address": "0.0.0.0",
+       "listening_port": 10080,
+       "server_address": "<YOUR_SERVER_ADDRESS(IP OR DOMAIN NAME)>",
+       "server_port": 443,
+       "ca_path": "./rootCA.crt"
+   }
+   ```
+
+4. copy the rootCA.crt file you got from Step 1 to **the same** folder as the executable file and configuration file.
+
+#### Step 4: run the client
+
+1. enter the gfw-proxy folder by double clicking the gfw-proxy
+
+2. click the path (see the picture) [path](path.png)
+
+3. type `cmd` and hit `Enter` on your keyboard
+
+4. type the following command:
+   
+   ```
+   .\gfw_proxy.exe .\client.txt
+   ```
+
+5. if it works, it should say:
+   
+   ```
+   gfw-proxy start running...
+   run type: client
+   listening on: 0.0.0.0:10080
+   server is running on: <DOMAIN>:<PORT>
+   using ca file to verify server: ./rootCA.crt
+   ```
+
+#### Step 5: tell your browser to use the (http) proxy
+
+1. Open your firefox browser (you can download it from the [official site](https://www.mozilla.org/en-US/firefox/download/thanks/))
+
+2. now type `about:preferences#general` and scroll down to the bottom, where you can see `Network Settings`. Click `Settings`.
+
+3. do the same as [mine](firefox_config.png), click ok when you're finished.
+
+4. now you're **DONE!!** Enjoy your work!
+
+## Troubleshooting
+
+You should first search your problems online, if you're unsure, create an issue and I'm willing to help you.
+
+## Thanks
+
+This project uses some of code from the [trojan-gfw/trojan project](https://github.com/trojan-gfw/trojan) but instead provided a http(s) proxy and uses simpler configuration file, as well as providing a much more detailed documentation (guide).
