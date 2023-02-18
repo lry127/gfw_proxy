@@ -183,7 +183,7 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
    2. use wget to get the server executable file
       
       ```
-      wget https://github.com/lry127/gfw_proxy/releases/download/v0.1-ga.1/linux-amd64.gz
+      wget https://github.com/lry127/gfw_proxy/releases/download/v0.1-ga.1/linux-amd64.tar.gz
       ```
    
    3. extract the runnable
