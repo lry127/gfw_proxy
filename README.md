@@ -232,13 +232,13 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
            ```
          
          - <PATH_TO_CERTIFICATE_KEY>: where your private key is stored, if you follow the guide strictly, you can see where it's located at by this command (you should copy the output)
-
+           
            ```
            ls $HOME/certs/my_certs/my_domain.key
            ```
-    
+      
       2. The sample config file might look like this:
-    
+         
          ```
          {
              "run_type": "server",
@@ -251,9 +251,9 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
              "http_service_port": 80
          }
          ```
-    
+      
       3. now write the config to a file called `server.json`
-    
+         
          ```
          echo "{
              \"run_type\": \"server\",
@@ -266,15 +266,15 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
              \"http_service_port\": 80
          }" > server.json
          ```
-    
+      
       4. run the server:
-    
+         
          ```
          sudo ./gfw_proxy ./server.json
          ```
-    
+         
          if it's working, you might get the following output:
-    
+         
          ```
          gfw-proxy start running...
          run type: server
@@ -283,21 +283,21 @@ Instead of teaching how to get a certificate from a public ca (certificate autho
          using costum private key: /root/certs/my_certs/my_domain.key
          fallback http service is running on: localhost:80
          ```
-    
+         
          then you're **DONE**! CONGRATULATIONS!
-    
+      
       5. now you'll need to run the server in background and you can safely disconnect from your ssh server. **First press `CTRL+C`**, then type:
-    
+         
          ```
          sudo nohup ./gfw_proxy ./server.json &
          ```
-    
+      
       6. verify it:
-    
+         
          ```
          sudo lsof -i:443
          ```
-    
+         
          you'll expect it output something
 
 ### Client Side Configuration
@@ -328,8 +328,6 @@ There are many methods available to you to get the root ca file, if you know how
   `https://<MY_IP_OR_DOMAIN>/rootCA.crt`
   
   you may need to ignore warnings your browser complaining about, it's normal.
-  
-  
 
 #### Step 2: Obtaining the executable
 
@@ -338,8 +336,6 @@ There are many methods available to you to get the root ca file, if you know how
 2. after downloading the .zip file, unzip it. (you need to right click the file and select Extract All...)
 
 3. now we call the folder you extracted from previous step `gfw-proxy`
-   
-   
 
 #### Step 3: Create the config file
 
